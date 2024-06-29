@@ -1,313 +1,397 @@
-ccna2sas1
+hsrp
 
-vl 5 192.168.0.64/27
-vl 6 192.168.0.0/26
+როუტერებს უნდა დავადპთ იმ ინტერფეისზე რომელიც უერთდება სვიჩებს
 
-R1- R2 192.168.1.0/30
-R1-ISP 192.168.1.4/30
-R2-ISP 192.168.1.8/30
+ვირტ როუტერში
+enable
+config t
+interface g0/1
+ standby version 2
+ standby 1 ip 192.168.1.254
+ standby 1 priority 150
+ standby 1 preempt
+end
 
 
-R1
-===
-ena
+ისე როუტერში
+enable
+config t
+ interface g0/0
+ standby version 2
+ standby 1 ip 192.168.1.254
+end
+
+ყველაფერში შევცვალოთ გეითვეი
+სვიჩებში ასე:
+Ip default-gateway 192.168.1.254
+და კომპებშიც შევცვალოთ
+
+9.3.3 packet tracer
+=======================================================================
+bgp
+
+-როუტერის bgp მოცემული იქნება
+-როუტერის მეზობელი როუტერის აიპიც მოცემული იქნება და მისი bgp ნომერიც
+-და მესამე ხაზზე თვითონ იმ როუტერის ნეთვორქია ჩასაწერი რომელსაც ვაკონფიგებთ, რაც ასევე მოცემული იქნება თავისი მასკიანად, ოღონდ შეიძლება ipv4 ადრესი იყოს, მაგალითად 192.168.0.1 და ჩვენ ნეთვორქს ავიღებთ ამისას, ანუ: 192.168.0.0
+
+router bgp 65001 
+neighbor 1.1.1.1 remote-as 65003 
+network 192.168.0.0 mask 255.255.255.0
+
+
+router bgp 65002
+neighbor 1.1.1.9 remote-as 65003
+network 172.16.10.0 mask 255.255.255.0
+
+
+11.2.1 packet tracer
+
+
+=======================================================================
+etherchanel
+
+lacp
+
+On On Yes
+On Active/Passive No
+Active Active Yes
+Active Passive Yes
+Passive Active Yes
+Passive Passive No
+
+---
+pagp
+
+On On Yes
+On Desirable/Auto No
+Desirable Desirable Yes
+Desirable Auto Yes
+Auto Desirable Yes
+Auto Auto No
+--------
+
+show
+show etherchannel summary
+show interfaces port-channel
+show etherchannel port-channel
+show interfaces etherchannel
+--------------
+config
+
+in ran fa 0/1-2
+channel-group 1 mode active
+exit
+in port-channel 1
+swi mode trunk
+swi trunk allowed vlan 1,2,20
+
+=======================================================================
+vtp 
+
+vtp ver 2
+vtp domain -----
+vtp pass -----
+vpt mode server/client/transparent
+
+=======================================================================
+stp
+
+spanning-tree mode rapid-pvst
+spanning-tree vlan (id) root primary
+
+სადაც აქსეს მოუდი გვაქ:
+
+spanning-tree portfast
+spanning-tree bpduguard en
+
+
+თუ გვინდა რომ პრიორიტეტი შევცვალოთ
+show soanning-tree - ამით ვნახავთ პრიორიტეტებს და
+
+spanning-tree vlan (id) priority 4096   - ეს სვიჩი გახდება რუთი
+
+======================================================================
+gre - გრეტუნელი
+
+
+        192.168.1.0/24
+pc----switch-----RA(router)
+                   s0/0/0  \      64.103.211.0/30
+       10.10.10.1/30        \
+                             -internet(ამასთან წითელი კაბელებითაა დაკავშირებული)
+           10.10.10.2/30    /   
+                    s0/0/0 /       209.165.122.0/30
+pc----switch-----RB(router)
+         192.168.2.0/24
+
+
+RA:
+en
 conf t
-ho R1
+in tunnel 0
+ip add 10.10.10.1 255.255.255.252
+tunnel source s0/0/0
+tunnel destination 209.165.122.2
+tunnel mode gre ip
+no shut
+ip route 192.168.2.0 255.255.255.0 10.10.10.2
 
-int g0/1
-no sh
-ip add 192.168.1.1 255.255.255.252
-int se0/3/0
-no sh
-ip add 192.168.1.5 255.255.255.252
-exi
-
-router eigrp 10
-eigrp router-id 1.1.1.1
-network 192.168.0.0 0.0.0.63
-network 192.168.0.64 0.0.0.31
-network 192.168.1.0 0.0.0.3
-passive g0/2
-no auto
-
-int g0/2
-no sh
-int g0/2.5
-encapsulation dot 5
-ip add 192.168.0.65 255.255.255.224
-no sh
-standby 5 priority 105
-standby 5 ip 192.168.0.69
-standby 5 timers 5 15
-int g0/2.6
-encapsulation dot 6
-ip add 192.168.0.1 255.255.255.192
-no sh
-standby 6 priority 106
-standby 6 preempt
-standby 6 ip 192.168.0.16
-standby 6 timers 6 18
-
-ip route 0.0.0.0 0.0.0.0 se0/3/0 100
-do wr
-
-R2
-===
-ena
+RB:
+en
 conf t
-ho R2
-
-int g0/0
-no sh
-ip add 192.168.1.2 255.255.255.252
-int g0/1
-no sh
-ip add 192.168.1.9 255.255.255.252
-exi
-
-int g0/2
-no sh
-int g0/2.5
-encapsulation dot 5
-ip add 192.168.0.66 255.255.255.224
-no sh
-standby 5 priority 115
-standby 5 preempt
-standby 5 ip 192.168.0.69
-standby 5 timers 5 15
-int g0/2.6
-encapsulation dot 6
-ip add 192.168.0.2 255.255.255.192
-no sh
-standby 6 priority 116
-standby 6 ip 192.168.0.16
-standby 6 timers 6 18
+in tunnel 0
+ip add 10.10.10.2 255.255.255.252
+tunnel source s0/0/0
+tunnel destination 64.103.211.2
+tunnel mode gre ip
+no shut
+ip route 192.168.1.2 255.255.255.0 10.10.10.1
 
 
-router eigrp 10
-eigrp router-id 2.2.2.2
-network 192.168.0.0 0.0.0.63
-network 192.168.0.64 0.0.0.31
-network 192.168.1.0 0.0.0.3
-passive g0/2
-no auto
 
-ip route 0.0.0.0 0.0.0.0 g0/1
-do wr
 
-ISP
-===
-ena
-conf t
-ho ISP
 
-int se0/3/1
-no sh
-ip add 192.168.1.6 255.255.255.252
-int g0/0
-no sh
-ip add 192.168.1.10 255.255.255.252
-int lo 1
-no sh
-ip add 200.0.0.1 255.255.255.252
-exi
+16.2.1 packet tracer
+=======================================================================
+stp da vtp შუალედურის ქომანდები
 
-router eigrp 10
-eigrp router-id 3.3.3.3
-redistribute static
-network 192.168.1.4 0.0.0.3
-network 192.168.1.8 0.0.0.3
-no auto
-exi
-ip route 192.168.0.0 255.255.255.128 se0/3/1 100
-ip route 192.168.0.0 255.255.255.128 g0/0
-do wr
+1. დავაკავშიროთ მოწყობილობები ერთმანეთთან
+შესაბამისი მედიასაშუალებებით,
+შევქმნათ სარეზერვო არხები
+2.VTP დომეინის სახელად გავწეროთ CCNA
+3.VTP დომეინის პაროლად გავწეროთ CCNA123
+4. S1 სვიჩი დავაკონფიგურიროთ, როგორც სერვერ სვიჩი
+5. S2 სვიჩი დავაკონფიგურიროთ როგორც კლიენტ სვიჩი
+6. S3 სვიჩი დავაკონფიგურიროთ როგორც კლიენტ სვიჩი
+7. S1 სვიჩზე შევქმნათ VLAN 30 და VLAN 40
+8.დავაკონფიგურიროთ PVSTP სადაც S1 იქნება root
+ როგორც VLAN 30-თვის, ასევე VLAN 40-თვის
 
 S1
-===
-ena
+en
 conf t
-host S1
-vtp domain seminar.btu.ge
-vtp password 2023
-vtp version 2
-vtp mode transparent
-vlan 5
-name Data_Users
-vlan 6
-name Management
-Vlan 7
-name Native
-int r fa0/2-3
-switchport mode trunk
-switchport trunk native vlan 7
-switchport nonegotiate
-int fa0/4
-channel-group 5 mode desirable
-int po 5
-switchport mode trunk
-switchport trunk native vlan 7
-int r fa0/1, fa0/5-24, g0/1-2
-switchport mode access
-switchport access vlan 7
-spanning bpdu enable
-spanning portfast
-shutdown
-switchport nonegotiate
-int r fa0/1-2, fa0/4-24, g0/1-2
-switchport nonegotiate
+h S1
+in ran fa0/1-3
+swi mod tr
 exit
-spanning-tree vlan 1 priority 61440
-spanning-tree vlan 5 priority 61440
-spanning-tree vlan 6 priority 61440
-spanning-tree vlan 7 priority 61440
-ip default 192.168.0.16
-int vlan 6
-ip add 192.168.0.21 255.255.255.192
-no sh
-do wr
 
+vtp ver 2
+vtp domain CCNA
+vtp pass CCNA123
+vtp mode server
+
+
+vlan 30
+name vlan30
+exit
+vlan 40
+name vlan40
+exit
+
+
+spanning-tree mode rapid-pvst
+spanning-tree vlan 30 root primary
+spanning-tree vlan 40 root primary
+exit
 
 
 S2
-===
-ena
+
+en
 conf t
-host S2
-vtp domain seminar.btu.ge
-vtp password 2023
-vtp version 2
-vtp mode transparent
-vlan 5
-name Data_Users
-vlan 6
-name Management
-Vlan 7
-name Native
-int r fa0/2-3
-switchport mode trunk
-switchport trunk native vlan 7
-int fa0/4
-channel-group 5 mode desirable
-int po 5
-switchport mode trunk
-switchport trunk native vlan 7
-int r fa0/5-6
-channel-group 2 mode on
-int po 2
-switchport mode trunk
-switchport trunk native vlan 7
-switchport nonegotiate
-int r fa0/1, fa0/7-24, g0/1-2
-switchport mode access
-spanning bpdu enable
-spanning portfast
-switchport access vlan 7
-shutdown
-int r fa0/1-24, g0/1-2
-switchport nonegotiate
-ip default 192.168.0.16
-int vlan 6
-ip add 192.168.0.22 255.255.255.192
-no sh
-exi
-spanning-tree vlan 1 root secondary
-spanning-tree vlan 5 root secondary
-spanning-tree vlan 6 root secondary
-spanning-tree vlan 7 root secondary
-do wr
+h S2
+vtp ver 2
+vtp domain CCNA
+vtp pass CCNA123
+vtp mode client
+
+
+in ran fa0/1-2
+swi mod tr
+exit
+in fa0/3
+swi mod acc
+swi acc vlan 30
+spanning-tree portfast
+spanning-tree bpduguard en
+exit
+
+
 
 
 S3
-===
-ena
+en
 conf t
-host S3
-vtp domain seminar.btu.ge
-vtp password 2023
-vtp version 2
-vtp mode server
-vlan 5
-name Data_Users
-vlan 6
-name Management
-Vlan 7
-name Native
-int r fa0/1-2
-channel-group 2 mode on
-int po 2
-switchport mode trunk
-switchport trunk native vlan 7
-int r fa0/3-4
-switchport mode trunk
-switchport trunk native vlan 7
-int r fa0/5-24, g0/1-2
-switchport mode access
-spanning bpdu enable
-spanning portfast
-switchport access vlan 7
-shutdown
-int r fa0/1-24, g0/1-2
-switchport nonegotiate
-exit
-spanning-tree vlan 1 priority 0
-spanning-tree vlan 5 priority 0
-spanning-tree vlan 6 priority 0
-spanning-tree vlan 7 priority 0
-ip default 192.168.0.16
-int vlan 6
-ip add 192.168.0.23 255.255.255.192
-no sh
-exi
-spanning-tree vlan 1 root primary
-spanning-tree vlan 5 root primary
-spanning-tree vlan 6 root primary
-spanning-tree vlan 7 root primary
-do wr
+h S3
 
-
-
-
-S4
-===
-ena
-conf t
-host S4
-vtp domain seminar.btu.ge
-vtp password 2023
-vtp version 2
+vtp ver 2
+vtp domain CCNA
+vtp pass CCNA123
 vtp mode client
-int r fa0/1-3, fa0/6
-switchport mode trunk
-switchport trunk native vlan 7
-int fa0/4
-switchport mode access
-switchport access vlan 5
-spanning bpdu enable
-spanning portfast
-int fa0/5
-switchport mode access
-switchport access vlan 6
-spanning bpdu enable
-spanning portfast
-int r fa0/7-24, g0/1-2
-switchport mode access
-switchport access vlan 7
-spanning bpdu enable
-spanning portfast
-shutdown
-int r fa0/1-24, g0/1-2
-switchport nonegotiate
+
+
+in ran fa0/1-2
+swi mod tr
 exit
-spanning-tree vlan 1 priority 61440
-spanning-tree vlan 5 priority 61440
-spanning-tree vlan 6 priority 61440
-spanning-tree vlan 7 priority 61440
-ip default 192.168.0.16
-int vlan 6
-ip add 192.168.0.24 255.255.255.192
+in fa0/3
+swi mod acc
+swi acc vlan 40
+spanning-tree portfast
+spanning-tree bpduguard en
+exit
+
+
+R1
+en
+conf t
+int g0/0
 no sh
-do wr
+exit
+
+in g0/0.30
+encapsulation dot1q 30
+ip add 172.16.30.1 255.255.255.0
+no sh
+exit
+
+in g0/0.40
+encapsulation dot1q 40
+ip add 172.16.40.1 255.255.255.0
+exit
+
+
+
+
+exit
+
+=======================================================================
+hsrp da etherchanel შუალედურის ქომანდები
+1. დავაკავშიროთ კომუტატორები ერთმანეთთან
+შესაბამისი მედიასაშუალებებით,
+შევქმნათ სარეზერვო არხები.
+კომუტატორები ერთმანეთთან დავაკავშიროთ ორ-ორი არხით
+2. კომუტატორებძე ფიზიკური არხები გავაერთიანოთ
+ ლოგიკურ არხებში და შევქმნათ etherchanel-ები LACP
+ პროტოკოლის გამოყენებით
+3. დავაკონფიგურიროთ port channel 1 S1 და S3 სვიჩებს შორის
+4. დავაკონფიგურიროთ port channel 2 S1 და S2 სვიჩებს შორის
+5. დავაკონფიგურიროთ port channel 3 S2 და S3 სვიჩებს შორის
+6. S1 კომუტატორი დავაკავშიროთ შესაბამისი
+მედიასაშუალებით R1 da R2 კომუტატორთან
+7. მოწყობილობების დამისამართებისთბის
+ გამოვიყენოთ 192.168.1.0/24 ქსელი
+8. HSRP-ს ჯგუფის ნომრად გავწეროთ 2
+9. HSRP-ს კონფიგურაციისას R2-ს გადავიყვანოთ Active რეჟიმში
+და გავააქტიუროთ  election-ის პროცესი
+10. HSRP-ს კონფიგურაციისას R1-ს გადავიყვანოთ Standby რეჟიმში
+------------
+s1
+
+en
+conf t
+ho S1
+in range fa 0/3-4
+channel-group 1 mode active
+in port-channel 1 
+swi mo tr
+
+in ran fa 0/3-4
+swi mo tr
+exit
+
+
+in ran fa 0/1-2
+channel-group 2 mode active 
+in port-channel 2
+swi mo tr
+
+in ran fa 0/3-4
+swi mo tr
+exit
+
+
+=====
+s2
+
+en
+conf t
+ho S2
+in ran fa 0/1-2
+channel-group 2 mode passive
+in port-channel 2
+swi mo tr
+
+in ran fa 0/1-2
+swi mo tr
+exit
+
+
+in ran fa 0/5-6
+channel-group 3 mode active
+in port-channel 3
+swi mo tr
+
+in ran fa 0/5-6
+swi mo tr
+exit
+
+in fa 0/7
+swi mo acc
+=====
+s3
+
+en
+conf t
+ho S3
+in ran fa 0/3-4
+channel-group 1 mode passive 
+in port-channel 1
+swi mo tr
+
+in fa 0/3-4
+swi mo tr
+exit
+
+in ran fa 0/5-6
+channel-group 3 mode passive
+in port-channel 3
+swi mo tr
+
+in ran fa 0/5-6
+swi mo tr
+exit
+
+in fa 0/7
+swi mo acc
+
+------------------
+r1
+
+en
+conf t
+ho R1
+
+in gi 0/0
+no sh
+ip add 192.168.1.1 255.255.255.0
+
+standby version 2
+standby 2 ip 192.168.1.1 
+
+-----
+r2
+
+en
+conf t
+ho R2
+
+in gi 0/0
+no sh
+
+standby version 2
+standby 2 ip 192.168.1.1
+standby 2 priority 150
+standby 2 preempt
 
 
 
