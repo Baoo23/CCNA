@@ -642,6 +642,20 @@ show logging
 
 
 
+-------------------------------
+GRE TUNNEL:
+ena
+conf t
+in tun 0
+ip add {ip} {mask}
+tunnel source {inter} -- mimartulebisken gamavali interface
+tunnel destination {network} -- mimartulebisken gamavali mopirdapire kseli
+tunnel mode gre ip
+no sh
+
++++ STATIC ROUTE
+
+
 
 
 
